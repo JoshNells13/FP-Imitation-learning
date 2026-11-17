@@ -1,0 +1,233 @@
+{
+  "run_dir": "logs\\rsl_rl\\k1_tracking\\2026-11-09_22-19-34_beyondmimic_k1_kick_finetune",
+  "final_scalars": {
+    "Episode_Reward/motion_global_root_pos": {
+      "initial_step": 1996,
+      "initial_value": 0.01078,
+      "final_step": 2495,
+      "final_value": 0.20745
+    },
+    "Episode_Reward/motion_global_root_ori": {
+      "initial_step": 1996,
+      "initial_value": 0.00922,
+      "final_step": 2495,
+      "final_value": 0.23583
+    },
+    "Episode_Reward/motion_body_pos": {
+      "initial_step": 1996,
+      "initial_value": 0.03513,
+      "final_step": 2495,
+      "final_value": 0.85693
+    },
+    "Episode_Reward/motion_body_ori": {
+      "initial_step": 1996,
+      "initial_value": 0.02125,
+      "final_step": 2495,
+      "final_value": 0.60209
+    },
+    "Episode_Reward/motion_body_lin_vel": {
+      "initial_step": 1996,
+      "initial_value": 0.01536,
+      "final_step": 2495,
+      "final_value": 0.48151
+    },
+    "Episode_Reward/motion_body_ang_vel": {
+      "initial_step": 1996,
+      "initial_value": 0.01154,
+      "final_step": 2495,
+      "final_value": 0.40174
+    },
+    "Episode_Reward/action_rate_l2": {
+      "initial_step": 1996,
+      "initial_value": -0.06719,
+      "final_step": 2495,
+      "final_value": -1.13865
+    },
+    "Episode_Reward/joint_limit": {
+      "initial_step": 1996,
+      "initial_value": -0.00101,
+      "final_step": 2495,
+      "final_value": -0.00985
+    },
+    "Episode_Reward/self_collisions": {
+      "initial_step": 1996,
+      "initial_value": -0.00259,
+      "final_step": 2495,
+      "final_value": -0.00941
+    },
+    "Metrics/motion/error_anchor_pos": {
+      "initial_step": 1996,
+      "initial_value": 0.13465,
+      "final_step": 2495,
+      "final_value": 0.30193
+    },
+    "Metrics/motion/error_anchor_rot": {
+      "initial_step": 1996,
+      "initial_value": 0.25079,
+      "final_step": 2495,
+      "final_value": 0.38181
+    },
+    "Metrics/motion/error_anchor_lin_vel": {
+      "initial_step": 1996,
+      "initial_value": 0.64256,
+      "final_step": 2495,
+      "final_value": 1.13413
+    },
+    "Metrics/motion/error_anchor_ang_vel": {
+      "initial_step": 1996,
+      "initial_value": 1.53265,
+      "final_step": 2495,
+      "final_value": 1.96788
+    },
+    "Metrics/motion/error_body_pos": {
+      "initial_step": 1996,
+      "initial_value": 1.68257,
+      "final_step": 2495,
+      "final_value": 0.12837
+    },
+    "Metrics/motion/error_body_rot": {
+      "initial_step": 1996,
+      "initial_value": 0.35573,
+      "final_step": 2495,
+      "final_value": 0.51099
+    },
+    "Metrics/motion/error_joint_pos": {
+      "initial_step": 1996,
+      "initial_value": 0.97952,
+      "final_step": 2495,
+      "final_value": 1.20578
+    },
+    "Metrics/motion/error_joint_vel": {
+      "initial_step": 1996,
+      "initial_value": 6.82433,
+      "final_step": 2495,
+      "final_value": 6.2737
+    },
+    "Metrics/motion/sampling_entropy": {
+      "initial_step": 1996,
+      "initial_value": 0.9924,
+      "final_step": 2495,
+      "final_value": 0.34176
+    },
+    "Metrics/motion/sampling_top1_prob": {
+      "initial_step": 1996,
+      "initial_value": 0.36727,
+      "final_step": 2495,
+      "final_value": 0.89281
+    },
+    "Metrics/motion/sampling_top1_bin": {
+      "initial_step": 1996,
+      "initial_value": 0.22222,
+      "final_step": 2495,
+      "final_value": 0.33333
+    },
+    "Metrics/motion/error_body_lin_vel": {
+      "initial_step": 1996,
+      "initial_value": 0.69401,
+      "final_step": 2495,
+      "final_value": 1.1478
+    },
+    "Metrics/motion/error_body_ang_vel": {
+      "initial_step": 1996,
+      "initial_value": 2.25511,
+      "final_step": 2495,
+      "final_value": 2.53114
+    },
+    "Episode_Termination/time_out": {
+      "initial_step": 1996,
+      "initial_value": 3.91667,
+      "final_step": 2495,
+      "final_value": 1.75
+    },
+    "Episode_Termination/anchor_pos": {
+      "initial_step": 1996,
+      "initial_value": 0.0,
+      "final_step": 2495,
+      "final_value": 0.08333
+    },
+    "Episode_Termination/anchor_ori": {
+      "initial_step": 1996,
+      "initial_value": 0.0,
+      "final_step": 2495,
+      "final_value": 0.0
+    },
+    "Episode_Termination/ee_body_pos": {
+      "initial_step": 1996,
+      "initial_value": 2.375,
+      "final_step": 2495,
+      "final_value": 3.41667
+    },
+    "Loss/value": {
+      "initial_step": 1996,
+      "initial_value": 0.52537,
+      "final_step": 2495,
+      "final_value": 0.21265
+    },
+    "Loss/surrogate": {
+      "initial_step": 1996,
+      "initial_value": -0.01222,
+      "final_step": 2495,
+      "final_value": -0.01104
+    },
+    "Loss/entropy": {
+      "initial_step": 1996,
+      "initial_value": 24.77267,
+      "final_step": 2495,
+      "final_value": 23.79147
+    },
+    "Loss/learning_rate": {
+      "initial_step": 1996,
+      "initial_value": 0.00011,
+      "final_step": 2495,
+      "final_value": 8e-05
+    },
+    "Policy/mean_std": {
+      "initial_step": 1996,
+      "initial_value": 0.74733,
+      "final_step": 2495,
+      "final_value": 0.7149
+    },
+    "Perf/total_fps": {
+      "initial_step": 1996,
+      "initial_value": 34036.0,
+      "final_step": 2495,
+      "final_value": 58562.0
+    },
+    "Perf/collection_time": {
+      "initial_step": 1996,
+      "initial_value": 1.20719,
+      "final_step": 2495,
+      "final_value": 0.71419
+    },
+    "Perf/learning_time": {
+      "initial_step": 1996,
+      "initial_value": 0.23691,
+      "final_step": 2495,
+      "final_value": 0.12512
+    },
+    "Train/mean_reward": {
+      "initial_step": 1996,
+      "initial_value": 0.4117,
+      "final_step": 2495,
+      "final_value": 16.41254
+    },
+    "Train/mean_episode_length": {
+      "initial_step": 1996,
+      "initial_value": 20.02,
+      "final_step": 2495,
+      "final_value": 300.51001
+    },
+    "Train/mean_reward/time": {
+      "initial_step": 1,
+      "initial_value": 0.4117,
+      "final_step": 432,
+      "final_value": 16.41254
+    },
+    "Train/mean_episode_length/time": {
+      "initial_step": 1,
+      "initial_value": 20.02,
+      "final_step": 432,
+      "final_value": 300.51001
+    }
+  }
+}
