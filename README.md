@@ -7,7 +7,17 @@ Tiga modul utama yang digabungkan di dalam proyek ini:
 2. **[BeyondMimic (`HybridRobotics/whole_body_tracking`)](https://github.com/HybridRobotics/whole_body_tracking)** — Metodologi *whole-body tracking* (*anchor-yaw-aligned relative keybody tracking*, *asymmetric actor-critic observations*, *6 exponential tracking rewards*, *adaptive failure-bin curriculum sampling*, dan *task-space height terminations*).
 3. **[MJLab + MuJoCo-Warp (`mujocolab/mjlab`)](https://github.com/mujocolab/mjlab)** — Simulator fisika MuJoCo berbasis GPU (`mujoco-warp`) dan algoritma *Proximal Policy Optimization* (**PPO**) lewat `rsl-rl-lib`.
 
+---
 
+## Demo Simulasi Hasil Training — Booster K1 (22-DoF) Whole-Body Motion Tracking
+
+Berikut adalah hasil simulasi *closed-loop* pada **MuJoCo Native Interactive Viewer (`play_interactive.py`)** di mana robot fisik **Booster K1 (22-DoF)** (putih) melacak gerakan referensi manusia hasil retargeting GMR (*bayangan hijau / ghost reference*) secara *real-time* (`50 Hz` kontrol PPO / `200 Hz` fisika MuJoCo):
+
+<div align="center">
+  <img src="./docs/walk.gif" alt="Booster K1 Walking Imitation Learning Demo" width="100%" />
+  <p><em> Video Demo: <a href="./docs/walk.mp4"><code>docs/walk.mp4</code></a> — Booster K1 (22-DoF) Walking Motion Imitation Learning di MuJoCo + MJLab</em></p>
+  <img src="./docs/walk.png" alt="Booster K1 Walking Imitation Learning Demo" width="100%" />
+</div>
 
 ---
 
@@ -19,7 +29,7 @@ Tiga modul utama yang digabungkan di dalam proyek ini:
 | **Root / Anchor Body** | `Trunk` (tinggi berdiri $\approx 0.53\text{ m}$, skala retargeting `0.56`) |
 | **Tracked Keybodies** | `14` link tubuh (`Trunk`, `Head_2`, bahu, lengan atas, tangan, pinggul, betis, dan telapak kaki) |
 | **Dimensi Observasi & Aksi** | Actor: `125 dim` \| Critic (Privileged): `251 dim` \| Action: `22 dim` |
-| **Motion Reference** | `data/motions/k1_kick.npz` (*Martial-Arts Front Kick*, `149` frame @ `50 FPS`, durasi `2.98 detik`) |
+| **Dukungan Gerakan (`.bvh` $\rightarrow$ `.npz`)** | **Universal Zero-Config** untuk seluruh gerakan `.bvh` (*Walk*, *Dance*, *Kick*, *Fight*, *Run*, dll. dari **LAFAN1**, **Xsens**, **Nokov**, **CMU**, **Mixamo**) |
 
 ---
 
@@ -99,23 +109,27 @@ Jalankan generator `.bvh` tendangan manusia:
 
 ### Tahap 2: Retargeting `.bvh` Manusia $\rightarrow$ `.pkl` & `.csv` Robot Booster K1 via GMR (`scripts/retarget_bvh_gmr.py`)
 
-Karena ukuran tulang dan struktur sendi manusia di file `.bvh` berbeda jauh dengan robot **Booster K1**, kita gunakan **GMR (*General Motion Retargeting*)** untuk memetakan gerakan manusia ke 22 sendi robot:
+Karena ukuran tulang dan struktur sendi manusia di file `.bvh` berbeda jauh dengan robot **Booster K1**, kita gunakan **GMR (*General Motion Retargeting*)** yang sudah dilengkapi **Universal Zero-Config Booster K1 Pipeline** untuk memetakan gerakan manusia apa saja (`walk`, `dance`, `kick`, `fight`, `run`, dll.) ke 22 sendi robot tanpa perlu *setting* manual:
 
 ```powershell
+# Cara Universal Zero-Config (Otomatis deteksi format BVH, pilih segmen aktif terbaik 5 detik, reset origin, & simpan ke data/retargeted/):
+.\.venv\Scripts\python.exe scripts\retarget_bvh_gmr.py --bvh-file data\bvh\motion-asset\walk1_subject1.bvh
+
+# Atau dengan menentukan lokasi output secara eksplisit:
 .\.venv\Scripts\python.exe scripts\retarget_bvh_gmr.py `
   --robot booster_k1 `
   --bvh-file data\bvh\human_kick_xsens.bvh `
-  --reset-to-zero `
   --save-pkl data\retargeted\k1_kick.pkl `
   --save-csv data\retargeted\k1_kick.csv `
   --save-video outputs\videos\gmr_retargeted_k1_kick.mp4
 ```
 
-#### Detail Proses di Dalam `retarget_bvh_gmr.py`:
-1. **Pembacaan & Downsampling**: Membaca `human_kick_xsens.bvh` (`120 Hz`) dan men-downsample menjadi `30 FPS` (`90` frame).
-2. **Tabel Pemetaan IK (`bvh_xsens_to_k1.json`)**: Menskalakan tinggi kerangka manusia dengan faktor `0.56` dan menjalankan solver *Differential Inverse Kinematics* (`Mink` + `DAQP`) dua tahap (`ik_match_table1` & `ik_match_table2`) agar posisi & orientasi `Trunk`, `Head_2`, tangan, paha, betis, dan telapak kaki robot mengikuti gerakan manusia.
-3. **Koreksi Kontak Lantai (`adjust_ground_contact`)**: Menggeser tinggi $z$ root supaya persentil ke-5 terendah dari telapak kaki berada tepat di atas permukaan lantai ($z = 0.024\text{ m}$).
-4. **Penyimpanan 29 Kolom CSV (`data/retargeted/k1_kick.csv`)**:
+#### Fitur Otomatis Universal di Dalam `retarget_bvh_gmr.py`:
+1. **Auto-Detect Skeleton, Scale (`cm`/`m`), FPS & Tinggi Manusia**: Otomatis mengenali format tulang `LAFAN1`/`Nokov`/`CMU`/`Mixamo` maupun `Xsens`, membaca `Frame Time:` dari header BVH untuk men-downsample ke `30 FPS`, serta mengestimasi tinggi subjek manusia asli secara otomatis.
+2. **Smart Active-Clip Auto-Window (`select_optimal_bvh_window`)**: Jika file BVH berdurasi panjang (misal 2–4 menit) dan `--start`/`--end` tidak diisi, skrip otomatis memilih segmen aktif `5.0 detik` (`150` frame @ `30 FPS`) terbaik yang bebas dari *T-pose* diam dan bebas dari posisi jongkok/rebahan ekstrem.
+3. **Auto-Origin `(X=0, Y=0)` & Heading `+X` (`reset_root_to_origin_and_plus_x`)**: Otomatis menempatkan posisi awal robot di titik `(0, 0)` menghadap ke sumbu `+X`.
+4. **Tabel Pemetaan IK (`bvh_lafan1_to_k1.json` & `bvh_xsens_to_k1.json`) + Universal K1 Safety Filter (`enforce_k1_kinematic_safety`)**: Menjalankan solver *Differential Inverse Kinematics* (`Mink` + `DAQP`) dua tahap, mencegah tabrakan lengan ke torso (`Shoulder_Roll` anti-collision clamp), membatasi 22 sendi di dalam margin aman fisik MJCF, menghaluskan *jitter* IK 1-frame, serta meratakan kontak telapak kaki ke lantai ($z = 0.024\text{ m}$).
+5. **Penyimpanan 29 Kolom CSV (`data/retargeted/k1_<nama>.csv`)**:
    Setiap baris mewakili 1 frame pada `30 FPS` dengan **29 kolom**:
    - Kolom `0..2`: Posisi root `Trunk` $(x, y, z)$ dalam meter.
    - Kolom `3..6`: Kuaternion orientasi root `Trunk` dalam urutan **`[qx, qy, qz, qw]`**.

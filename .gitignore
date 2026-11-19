@@ -23,7 +23,7 @@ events.out.tfevents.*
 *.log
 
 # 4. Private Motion Datasets, Trained Policy Weights & Generated Videos
-data/bvh/*.bvh
+data/bvh/**/*.bvh
 data/retargeted/*.pkl
 data/retargeted/*.csv
 data/motions/*.npz
@@ -31,6 +31,9 @@ outputs/checkpoints/*.pt
 outputs/checkpoints/*.onnx
 outputs/evaluation/*.npz
 outputs/videos/*.mp4
+!docs/**
+!docs/*.mp4
+!docs/*.gif
 
 # 5. OS & IDE Files
 .DS_Store
