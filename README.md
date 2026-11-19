@@ -1,6 +1,6 @@
 # Humanoid Whole-Body Motion Imitation Learning — Booster K1 (22-DoF)
 
-Proyek ini berisi pipeline *end-to-end* **Whole-Body Motion Imitation Learning** untuk robot humanoid **Booster K1 (22-DoF)** menggunakan **Python + MuJoCo + MJLab + PyTorch** (tanpa ROS 2, tanpa Isaac Sim, dan tanpa Isaac Lab), serta terintegrasi langsung dengan Web Control & Visualization Platform di [`../monitoring-control-imitation`](../monitoring-control-imitation).
+Proyek ini berisi pipeline *end-to-end* **Whole-Body Motion Imitation Learning** untuk robot humanoid **Booster K1 (22-DoF)** menggunakan **Python + MuJoCo + MJLab + PyTorch** (tanpa ROS 2, tanpa Isaac Sim, dan tanpa Isaac Lab), serta terintegrasi langsung dengan **Website Monitoring & Control Platform** pada repository terpisah: **[FP-Website-Monitoring-Control-imitation-learning](https://github.com/JoshNells13/FP-Website-Monitoring-Control-imitation-learning)** (folder lokal [`../monitoring-control-imitation`](../monitoring-control-imitation)).
 
 Tiga modul utama yang digabungkan di dalam proyek ini:
 1. **[GMR (`YanjieZe/GMR`)](https://github.com/YanjieZe/GMR)** — *General Motion Retargeting* berbasis *two-stage differential inverse kinematics* (`Mink` + `DAQP`) untuk memetakan gerakan manusia (`.bvh` Xsens / LAFAN1) ke sendi robot **Booster K1**.
@@ -232,9 +232,11 @@ Buat grafik kurva konvergensi TensorBoard dan video perbandingan *side-by-side*:
 
 ---
 
-### Tahap 7: Menjalankan Web Control & Visualization Platform (`../monitoring-control-imitation`)
+### Tahap 7: Menjalankan Website Monitoring & Control Platform
 
-Seluruh hasil dari Tahap 0 s/d Tahap 6 di atas otomatis terbaca secara *live* (tanpa database dan tanpa data dummy) oleh aplikasi Web Control Center di folder [`../monitoring-control-imitation`](../monitoring-control-imitation):
+- **Repository GitHub Website Monitoring & Control**: https://github.com/JoshNells13/FP-Website-Monitoring-Control-imitation-learning
+
+Seluruh hasil dari Tahap 0 s/d Tahap 6 di atas otomatis terbaca secara *live* (tanpa database dan tanpa data dummy) oleh aplikasi Website Monitoring & Control pada repository **[FP-Website-Monitoring-Control-imitation-learning](https://github.com/JoshNells13/FP-Website-Monitoring-Control-imitation-learning)** (folder lokal [`../monitoring-control-imitation`](../monitoring-control-imitation)):
 
 ```powershell
 cd C:\Users\ASUS\Documents\fp-ichiro\monitoring-control-imitation
