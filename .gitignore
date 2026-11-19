@@ -1,0 +1,39 @@
+# ==============================================================================
+# .gitignore — Humanoid Imitation Learning (Booster K1 — GMR + BeyondMimic + MJLab)
+# ==============================================================================
+
+# 1. Embedded Python & Virtual Environment (Local Machine Paths)
+.python/
+.venv/
+venv/
+.cache/
+__pycache__/
+*.py[cod]
+
+# 2. Secrets & Environment Variables
+.env
+.env.*
+*.pem
+*.key
+wandb/
+
+# 3. Training Logs & TensorBoard Events
+logs/
+events.out.tfevents.*
+*.log
+
+# 4. Private Motion Datasets, Trained Policy Weights & Generated Videos
+data/bvh/*.bvh
+data/retargeted/*.pkl
+data/retargeted/*.csv
+data/motions/*.npz
+outputs/checkpoints/*.pt
+outputs/checkpoints/*.onnx
+outputs/evaluation/*.npz
+outputs/videos/*.mp4
+
+# 5. OS & IDE Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

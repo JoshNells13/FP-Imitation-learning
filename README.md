@@ -2,6 +2,8 @@
 
 Proyek ini berisi pipeline *end-to-end* **Whole-Body Motion Imitation Learning** untuk robot humanoid **Booster K1 (22-DoF)** menggunakan **Python + MuJoCo + MJLab + PyTorch** (tanpa ROS 2, tanpa Isaac Sim, dan tanpa Isaac Lab).
 
+Website Monitoring Dan Kontrol : **https://github.com/JoshNells13/FP-Website-Monitoring-Control-imitation-learning**
+
 Tiga modul utama yang digabungkan di dalam proyek ini:
 1. **[GMR (`YanjieZe/GMR`)](https://github.com/YanjieZe/GMR)** — *General Motion Retargeting* berbasis *two-stage differential inverse kinematics* (`Mink` + `DAQP`) untuk memetakan gerakan manusia (`.bvh` Xsens / LAFAN1) ke sendi robot **Booster K1**.
 2. **[BeyondMimic (`HybridRobotics/whole_body_tracking`)](https://github.com/HybridRobotics/whole_body_tracking)** — Metodologi *whole-body tracking* (*anchor-yaw-aligned relative keybody tracking*, *asymmetric actor-critic observations*, *6 exponential tracking rewards*, *adaptive failure-bin curriculum sampling*, dan *task-space height terminations*).
