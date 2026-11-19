@@ -183,6 +183,12 @@ def main() -> None:
         help="Output .png path for joint tracking plot.",
     )
     parser.add_argument(
+        "--output-rollout-npz",
+        type=str,
+        default="",
+        help="Optional output .npz path for closed-loop rollout trajectory (for Web 3D Viewer).",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default="cuda:0",
@@ -191,8 +197,12 @@ def main() -> None:
     args = parser.parse_args()
 
     device = args.device if torch.cuda.is_available() else "cpu"
-    ckpt_path = pathlib.Path(args.checkpoint_file).resolve()
-    motion_path = pathlib.Path(args.motion_file).resolve()
+    ckpt_path = pathlib.Path(args.checkpoint_file)
+    if not ckpt_path.is_absolute():
+        ckpt_path = (WORKSPACE_ROOT / ckpt_path).resolve()
+    motion_path = pathlib.Path(args.motion_file)
+    if not motion_path.is_absolute():
+        motion_path = (WORKSPACE_ROOT / motion_path).resolve()
 
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
@@ -252,6 +262,9 @@ def main() -> None:
     sim_q_list = []
     ref_dq_list = []
     sim_dq_list = []
+    sim_bpos_list = []
+    sim_bquat_list = []
+    actions_list = []
     mpkpe_list = []
     rmpkpe_list = []
     hand_err_list = []
@@ -269,11 +282,15 @@ def main() -> None:
             sim_q = cmd_term.robot.data.joint_pos[0].detach().cpu().numpy().copy()
             ref_dq = cmd_term.joint_vel[0].detach().cpu().numpy().copy()
             sim_dq = cmd_term.robot.data.joint_vel[0].detach().cpu().numpy().copy()
+            sim_bpos = cmd_term.robot.data.body_link_pos_w[0].detach().cpu().numpy().copy()
+            sim_bquat = cmd_term.robot.data.body_link_quat_w[0].detach().cpu().numpy().copy()
 
             ref_q_list.append(ref_q)
             sim_q_list.append(sim_q)
             ref_dq_list.append(ref_dq)
             sim_dq_list.append(sim_dq)
+            sim_bpos_list.append(sim_bpos)
+            sim_bquat_list.append(sim_bquat)
 
             pos_err_b = torch.norm(cmd_term.body_pos_w - cmd_term.robot_body_pos_w, dim=-1)[0]
             rel_err_b = torch.norm(cmd_term.body_pos_relative_w - cmd_term.robot_body_pos_w, dim=-1)[0]
@@ -292,9 +309,30 @@ def main() -> None:
                 video_frames.append(frame)
 
             actions = policy(obs)
+            actions_list.append(actions[0].detach().cpu().numpy().copy())
             obs, _, _, _ = play_vec_env.step(actions)
 
+        # Record final T-th frame state for full T-frame rollout export
+        sim_q_final = cmd_term.robot.data.joint_pos[0].detach().cpu().numpy().copy()
+        sim_dq_final = cmd_term.robot.data.joint_vel[0].detach().cpu().numpy().copy()
+        sim_bpos_final = cmd_term.robot.data.body_link_pos_w[0].detach().cpu().numpy().copy()
+        sim_bquat_final = cmd_term.robot.data.body_link_quat_w[0].detach().cpu().numpy().copy()
+        act_final = policy(obs)[0].detach().cpu().numpy().copy()
+
     play_vec_env.close()
+
+    rollout_rel = args.output_rollout_npz or f"outputs/evaluation/{motion_path.stem}_rollout_trajectory.npz"
+    rollout_npz_path = (WORKSPACE_ROOT / rollout_rel).resolve()
+    rollout_npz_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        rollout_npz_path,
+        sim_joint_pos=np.stack(sim_q_list + [sim_q_final], axis=0).astype(np.float32),
+        sim_joint_vel=np.stack(sim_dq_list + [sim_dq_final], axis=0).astype(np.float32),
+        sim_body_pos_w=np.stack(sim_bpos_list + [sim_bpos_final], axis=0).astype(np.float32),
+        sim_body_quat_w=np.stack(sim_bquat_list + [sim_bquat_final], axis=0).astype(np.float32),
+        actions=np.stack(actions_list + [act_final], axis=0).astype(np.float32),
+    )
+    print(f"[bold green]Saved {traj_steps}-frame closed-loop rollout NPZ to {rollout_npz_path}[/bold green]")
 
     # Save simulation video across 2 full loops so viewers can clearly watch the motion
     video_path = (WORKSPACE_ROOT / args.output_video).resolve()

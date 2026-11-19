@@ -1,163 +1,163 @@
 {
   "robot_model": "booster_k1_22dof",
   "task_id": "Mjlab-Tracking-Flat-Booster-K1",
-  "motion_file": "data\\motions\\k1_kick.npz",
-  "checkpoint_file": "outputs\\checkpoints\\k1_kick_policy.pt",
-  "trajectory_frames_50fps": 149,
-  "trajectory_duration_sec": 2.98,
-  "joint_tracking_mae_rad": 0.14701,
-  "joint_tracking_mae_deg": 8.423,
-  "joint_tracking_rmse_rad": 0.21691,
-  "joint_tracking_rmse_deg": 12.428,
-  "perturbed_batch_joint_mae_rad": 0.16281,
-  "perturbed_batch_joint_rmse_rad": 0.23408,
-  "joint_velocity_mae_rad_s": 0.5716,
-  "joint_velocity_rmse_rad_s": 1.0181,
-  "mpkpe_m": 0.10834,
-  "mpkpe_mm": 108.34,
-  "r_mpkpe_m": 0.03938,
-  "r_mpkpe_mm": 39.38,
-  "end_effector_hand_error_m": 0.03322,
-  "end_effector_hand_error_mm": 33.22,
-  "end_effector_foot_error_m": 0.09632,
-  "end_effector_foot_error_mm": 96.32,
-  "anchor_orientation_error_rad": 0.1692,
-  "anchor_orientation_error_deg": 9.694,
+  "motion_file": "data\\motions\\k1_dance.npz",
+  "checkpoint_file": "outputs\\checkpoints\\k1_dance_policy.pt",
+  "trajectory_frames_50fps": 199,
+  "trajectory_duration_sec": 3.98,
+  "joint_tracking_mae_rad": 0.21633,
+  "joint_tracking_mae_deg": 12.395,
+  "joint_tracking_rmse_rad": 0.31939,
+  "joint_tracking_rmse_deg": 18.3,
+  "perturbed_batch_joint_mae_rad": 0.2198,
+  "perturbed_batch_joint_rmse_rad": 0.32827,
+  "joint_velocity_mae_rad_s": 0.5144,
+  "joint_velocity_rmse_rad_s": 0.9674,
+  "mpkpe_m": 0.13112,
+  "mpkpe_mm": 131.12,
+  "r_mpkpe_m": 0.04542,
+  "r_mpkpe_mm": 45.42,
+  "end_effector_hand_error_m": 0.10251,
+  "end_effector_hand_error_mm": 102.51,
+  "end_effector_foot_error_m": 0.08773,
+  "end_effector_foot_error_mm": 87.73,
+  "anchor_orientation_error_rad": 0.13656,
+  "anchor_orientation_error_deg": 7.824,
   "num_eval_episodes": 256,
-  "num_completed_episodes": 168,
-  "success_rate_percent": 65.62,
+  "num_completed_episodes": 187,
+  "success_rate_percent": 73.05,
   "per_joint_metrics": {
     "AAHead_yaw": {
-      "mae_rad": 0.10202,
-      "mae_deg": 5.845,
-      "rmse_rad": 0.14019,
-      "rmse_deg": 8.032
+      "mae_rad": 0.27779,
+      "mae_deg": 15.916,
+      "rmse_rad": 0.33393,
+      "rmse_deg": 19.133
     },
     "Head_pitch": {
-      "mae_rad": 0.14059,
-      "mae_deg": 8.055,
-      "rmse_rad": 0.17475,
-      "rmse_deg": 10.012
+      "mae_rad": 0.2544,
+      "mae_deg": 14.576,
+      "rmse_rad": 0.31442,
+      "rmse_deg": 18.015
     },
     "ALeft_Shoulder_Pitch": {
-      "mae_rad": 0.12678,
-      "mae_deg": 7.264,
-      "rmse_rad": 0.14523,
-      "rmse_deg": 8.321
+      "mae_rad": 0.1178,
+      "mae_deg": 6.749,
+      "rmse_rad": 0.17919,
+      "rmse_deg": 10.267
     },
     "Left_Shoulder_Roll": {
-      "mae_rad": 0.10202,
-      "mae_deg": 5.845,
-      "rmse_rad": 0.15593,
-      "rmse_deg": 8.934
+      "mae_rad": 0.54369,
+      "mae_deg": 31.151,
+      "rmse_rad": 0.74396,
+      "rmse_deg": 42.626
     },
     "Left_Elbow_Pitch": {
-      "mae_rad": 0.09615,
-      "mae_deg": 5.509,
-      "rmse_rad": 0.12637,
-      "rmse_deg": 7.24
+      "mae_rad": 0.26809,
+      "mae_deg": 15.36,
+      "rmse_rad": 0.33399,
+      "rmse_deg": 19.136
     },
     "Left_Elbow_Yaw": {
-      "mae_rad": 0.23275,
-      "mae_deg": 13.335,
-      "rmse_rad": 0.25906,
-      "rmse_deg": 14.843
+      "mae_rad": 0.31349,
+      "mae_deg": 17.962,
+      "rmse_rad": 0.33205,
+      "rmse_deg": 19.025
     },
     "ARight_Shoulder_Pitch": {
-      "mae_rad": 0.11145,
-      "mae_deg": 6.386,
-      "rmse_rad": 0.14017,
-      "rmse_deg": 8.031
+      "mae_rad": 0.08157,
+      "mae_deg": 4.673,
+      "rmse_rad": 0.10158,
+      "rmse_deg": 5.82
     },
     "Right_Shoulder_Roll": {
-      "mae_rad": 0.07561,
-      "mae_deg": 4.332,
-      "rmse_rad": 0.12086,
-      "rmse_deg": 6.925
+      "mae_rad": 0.56426,
+      "mae_deg": 32.33,
+      "rmse_rad": 0.7689,
+      "rmse_deg": 44.055
     },
     "Right_Elbow_Pitch": {
-      "mae_rad": 0.05679,
-      "mae_deg": 3.254,
-      "rmse_rad": 0.06542,
-      "rmse_deg": 3.748
+      "mae_rad": 0.22156,
+      "mae_deg": 12.694,
+      "rmse_rad": 0.29008,
+      "rmse_deg": 16.62
     },
     "Right_Elbow_Yaw": {
-      "mae_rad": 0.1388,
-      "mae_deg": 7.953,
-      "rmse_rad": 0.19577,
-      "rmse_deg": 11.217
+      "mae_rad": 0.26256,
+      "mae_deg": 15.044,
+      "rmse_rad": 0.27226,
+      "rmse_deg": 15.6
     },
     "Left_Hip_Pitch": {
-      "mae_rad": 0.0994,
-      "mae_deg": 5.695,
-      "rmse_rad": 0.11844,
-      "rmse_deg": 6.786
+      "mae_rad": 0.18246,
+      "mae_deg": 10.454,
+      "rmse_rad": 0.21085,
+      "rmse_deg": 12.081
     },
     "Left_Hip_Roll": {
-      "mae_rad": 0.09094,
-      "mae_deg": 5.211,
-      "rmse_rad": 0.1045,
-      "rmse_deg": 5.987
+      "mae_rad": 0.12015,
+      "mae_deg": 6.884,
+      "rmse_rad": 0.14787,
+      "rmse_deg": 8.472
     },
     "Left_Hip_Yaw": {
-      "mae_rad": 0.062,
-      "mae_deg": 3.552,
-      "rmse_rad": 0.08291,
-      "rmse_deg": 4.75
+      "mae_rad": 0.20573,
+      "mae_deg": 11.787,
+      "rmse_rad": 0.23866,
+      "rmse_deg": 13.674
     },
     "Left_Knee_Pitch": {
-      "mae_rad": 0.29074,
-      "mae_deg": 16.658,
-      "rmse_rad": 0.31387,
-      "rmse_deg": 17.983
+      "mae_rad": 0.21544,
+      "mae_deg": 12.344,
+      "rmse_rad": 0.24537,
+      "rmse_deg": 14.058
     },
     "Left_Ankle_Pitch": {
-      "mae_rad": 0.21716,
-      "mae_deg": 12.442,
-      "rmse_rad": 0.22913,
-      "rmse_deg": 13.128
+      "mae_rad": 0.0802,
+      "mae_deg": 4.595,
+      "rmse_rad": 0.11094,
+      "rmse_deg": 6.356
     },
     "Left_Ankle_Roll": {
-      "mae_rad": 0.04817,
-      "mae_deg": 2.76,
-      "rmse_rad": 0.05587,
-      "rmse_deg": 3.201
+      "mae_rad": 0.10309,
+      "mae_deg": 5.907,
+      "rmse_rad": 0.11641,
+      "rmse_deg": 6.67
     },
     "Right_Hip_Pitch": {
-      "mae_rad": 0.44145,
-      "mae_deg": 25.293,
-      "rmse_rad": 0.53119,
-      "rmse_deg": 30.435
+      "mae_rad": 0.16834,
+      "mae_deg": 9.645,
+      "rmse_rad": 0.18776,
+      "rmse_deg": 10.758
     },
     "Right_Hip_Roll": {
-      "mae_rad": 0.04613,
-      "mae_deg": 2.643,
-      "rmse_rad": 0.06014,
-      "rmse_deg": 3.446
+      "mae_rad": 0.07808,
+      "mae_deg": 4.474,
+      "rmse_rad": 0.10198,
+      "rmse_deg": 5.843
     },
     "Right_Hip_Yaw": {
-      "mae_rad": 0.14305,
-      "mae_deg": 8.196,
-      "rmse_rad": 0.17042,
-      "rmse_deg": 9.764
+      "mae_rad": 0.27144,
+      "mae_deg": 15.553,
+      "rmse_rad": 0.27973,
+      "rmse_deg": 16.027
     },
     "Right_Knee_Pitch": {
-      "mae_rad": 0.38661,
-      "mae_deg": 22.151,
-      "rmse_rad": 0.48684,
-      "rmse_deg": 27.894
+      "mae_rad": 0.23442,
+      "mae_deg": 13.431,
+      "rmse_rad": 0.33088,
+      "rmse_deg": 18.958
     },
     "Right_Ankle_Pitch": {
-      "mae_rad": 0.0959,
-      "mae_deg": 5.495,
-      "rmse_rad": 0.1195,
-      "rmse_deg": 6.847
+      "mae_rad": 0.10033,
+      "mae_deg": 5.748,
+      "rmse_rad": 0.11098,
+      "rmse_deg": 6.359
     },
     "Right_Ankle_Roll": {
-      "mae_rad": 0.12977,
-      "mae_deg": 7.435,
-      "rmse_rad": 0.16581,
-      "rmse_deg": 9.5
+      "mae_rad": 0.09429,
+      "mae_deg": 5.402,
+      "rmse_rad": 0.10781,
+      "rmse_deg": 6.177
     }
   }
 }

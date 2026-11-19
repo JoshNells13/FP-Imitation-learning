@@ -33,6 +33,7 @@ for rel_path in ("third_party/mjlab/src", "third_party/GMR"):
         sys.path.insert(0, full_path)
 
 import argparse
+import numpy as np
 import torch
 import yaml
 from rich import print
@@ -41,11 +42,91 @@ from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.tracking.config.k1.env_cfgs import booster_k1_flat_tracking_env_cfg
 from mjlab.tasks.tracking.config.k1.rl_cfg import booster_k1_tracking_ppo_runner_cfg
-from mjlab.tasks.tracking.mdp import MotionCommandCfg
+from mjlab.tasks.tracking.mdp import MotionCommand, MotionCommandCfg
 from mjlab.tasks.tracking.rl import MotionTrackingOnPolicyRunner
 from mjlab.utils.gpu import select_gpus
 from mjlab.utils.os import dump_yaml
 from mjlab.utils.torch import configure_torch_backends
+
+
+def _resolve_workspace_path(raw_path: str) -> pathlib.Path:
+    """Resolve a path relative to WORKSPACE_ROOT without duplicating 'human-imitation-learning' prefix."""
+    p = pathlib.Path(raw_path)
+    if p.is_absolute():
+        return p.resolve()
+    parts = list(p.parts)
+    if parts and parts[0].lower() == WORKSPACE_ROOT.name.lower():
+        p = pathlib.Path(*parts[1:])
+    return (WORKSPACE_ROOT / p).resolve()
+
+
+def _export_closed_loop_rollout_npz(
+    ckpt_path: pathlib.Path,
+    motion_path: pathlib.Path,
+    device: str,
+) -> None:
+    """Automatically export a deterministic closed-loop rollout trajectory .npz for the 3D Web Simulation Viewer."""
+    try:
+        play_cfg = booster_k1_flat_tracking_env_cfg(play=True)
+        agent_cfg = booster_k1_tracking_ppo_runner_cfg()
+        play_cfg.scene.num_envs = 1
+
+        motion_cmd_cfg = play_cfg.commands["motion"]
+        assert isinstance(motion_cmd_cfg, MotionCommandCfg)
+        motion_cmd_cfg.motion_file = str(motion_path)
+        motion_cmd_cfg.sampling_mode = "start"
+        motion_cmd_cfg.pose_range = {}
+        motion_cmd_cfg.velocity_range = {}
+
+        play_env = ManagerBasedRlEnv(cfg=play_cfg, device=device, render_mode=None)
+        play_vec_env = RslRlVecEnvWrapper(play_env)
+
+        runner = MotionTrackingOnPolicyRunner(
+            play_vec_env, asdict(agent_cfg), log_dir=None, device=device
+        )
+        runner.load(str(ckpt_path), map_location=device)
+        policy = runner.get_inference_policy(device=device)
+
+        cmd_term: MotionCommand = play_env.command_manager.get_term("motion")
+        traj_steps = int(cmd_term.motion.time_step_total)
+
+        obs, _ = play_vec_env.reset()
+        cmd_term.time_steps.zero_()
+        cmd_term._resample_command(torch.tensor([0], device=device))
+        obs = play_vec_env.get_observations()
+
+        sim_q_list, sim_dq_list, sim_bpos_list, sim_bquat_list, act_list = [], [], [], [], []
+        with torch.no_grad():
+            for _ in range(traj_steps - 1):
+                sim_q_list.append(cmd_term.robot.data.joint_pos[0].detach().cpu().numpy().copy())
+                sim_dq_list.append(cmd_term.robot.data.joint_vel[0].detach().cpu().numpy().copy())
+                sim_bpos_list.append(cmd_term.robot.data.body_link_pos_w[0].detach().cpu().numpy().copy())
+                sim_bquat_list.append(cmd_term.robot.data.body_link_quat_w[0].detach().cpu().numpy().copy())
+                actions = policy(obs)
+                act_list.append(actions[0].detach().cpu().numpy().copy())
+                obs, _, _, _ = play_vec_env.step(actions)
+
+            sim_q_list.append(cmd_term.robot.data.joint_pos[0].detach().cpu().numpy().copy())
+            sim_dq_list.append(cmd_term.robot.data.joint_vel[0].detach().cpu().numpy().copy())
+            sim_bpos_list.append(cmd_term.robot.data.body_link_pos_w[0].detach().cpu().numpy().copy())
+            sim_bquat_list.append(cmd_term.robot.data.body_link_quat_w[0].detach().cpu().numpy().copy())
+            act_list.append(policy(obs)[0].detach().cpu().numpy().copy())
+
+        play_vec_env.close()
+
+        rollout_path = (WORKSPACE_ROOT / "outputs" / "evaluation" / f"{motion_path.stem}_rollout_trajectory.npz").resolve()
+        rollout_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            rollout_path,
+            sim_joint_pos=np.stack(sim_q_list, axis=0).astype(np.float32),
+            sim_joint_vel=np.stack(sim_dq_list, axis=0).astype(np.float32),
+            sim_body_pos_w=np.stack(sim_bpos_list, axis=0).astype(np.float32),
+            sim_body_quat_w=np.stack(sim_bquat_list, axis=0).astype(np.float32),
+            actions=np.stack(act_list, axis=0).astype(np.float32),
+        )
+        print(f"[bold green]Auto-exported {traj_steps}-frame 3D rollout trajectory to {rollout_path}[/bold green]")
+    except Exception as exc:
+        print(f"[yellow]Warning: Auto-rollout export skipped: {exc}[/yellow]")
 
 
 class SafeMotionTrackingRunner(MotionTrackingOnPolicyRunner):
@@ -145,7 +226,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    motion_path = pathlib.Path(args.motion_file).resolve()
+    motion_path = _resolve_workspace_path(args.motion_file)
     if not motion_path.exists():
         raise FileNotFoundError(f"Motion NPZ file not found: {motion_path}")
 
@@ -188,7 +269,7 @@ def main() -> None:
     )
 
     if args.resume_from is not None:
-        resume_path = pathlib.Path(args.resume_from).resolve()
+        resume_path = _resolve_workspace_path(args.resume_from)
         print(f"[INFO] Loading model checkpoint from: {resume_path}")
         runner.load(str(resume_path))
 
@@ -209,7 +290,7 @@ def main() -> None:
     )
     if latest_ckpts:
         final_ckpt = latest_ckpts[-1]
-        out_ckpt_path = (WORKSPACE_ROOT / args.output_checkpoint).resolve()
+        out_ckpt_path = _resolve_workspace_path(args.output_checkpoint)
         out_ckpt_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(final_ckpt, out_ckpt_path)
         print(f"[bold green]Copied final trained policy checkpoint to {out_ckpt_path}[/bold green]")
@@ -219,6 +300,9 @@ def main() -> None:
             out_onnx_path = out_ckpt_path.with_suffix(".onnx")
             shutil.copy2(onnx_files[-1], out_onnx_path)
             print(f"[green]Copied exported ONNX policy to {out_onnx_path}[/green]")
+
+        # Auto-export closed-loop 3D rollout trajectory .npz for Web 3D Simulation Viewer
+        _export_closed_loop_rollout_npz(out_ckpt_path, motion_path, device)
 
 
 if __name__ == "__main__":
