@@ -3,9 +3,11 @@
 Proyek ini berisi pipeline *end-to-end* **Whole-Body Motion Imitation Learning** untuk robot humanoid **Booster K1 (22-DoF)** menggunakan **Python + MuJoCo + MJLab + PyTorch** (tanpa ROS 2, tanpa Isaac Sim, dan tanpa Isaac Lab), serta terintegrasi langsung dengan **Website Monitoring & Control Platform** pada repository terpisah: **[FP-Website-Monitoring-Control-imitation-learning](https://github.com/JoshNells13/FP-Website-Monitoring-Control-imitation-learning)** (folder lokal [`../monitoring-control-imitation`](../monitoring-control-imitation)).
 
 Tiga modul utama yang digabungkan di dalam proyek ini:
-1. **[GMR (`YanjieZe/GMR`)](https://github.com/YanjieZe/GMR)** — *General Motion Retargeting* berbasis *two-stage differential inverse kinematics* (`Mink` + `DAQP`) untuk memetakan gerakan manusia (`.bvh` Xsens / LAFAN1) ke sendi robot **Booster K1**.
+1. **[GMR (`YanjieZe/GMR`)](https://github.com/YanjieZe/GMR)** — *General Motion Retargeting* berbasis *two-stage differential inverse kinematics* (`Mink` + `DAQP`) untuk memetakan gerakan manusia (`.bvh` Xsens / **[LAFAN1 (`ubisoft/ubisoft-laforge-animation-dataset`)](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)**) ke sendi robot **Booster K1**.
 2. **[BeyondMimic (`HybridRobotics/whole_body_tracking`)](https://github.com/HybridRobotics/whole_body_tracking)** — Metodologi *whole-body tracking* (*anchor-yaw-aligned relative keybody tracking*, *asymmetric actor-critic observations*, *6 exponential tracking rewards*, *adaptive failure-bin curriculum sampling*, dan *task-space height terminations*).
 3. **[MJLab + MuJoCo-Warp (`mujocolab/mjlab`)](https://github.com/mujocolab/mjlab)** — Simulator fisika MuJoCo berbasis GPU (`mujoco-warp`) dan algoritma *Proximal Policy Optimization* (**PPO**) lewat `rsl-rl-lib`.
+
+
 
 ---
 
@@ -71,7 +73,8 @@ Seluruh geometri dan kinematika robot berasal dari folder [`third_party/GMR/asse
 Data gerakan manusia berasal dari file **`.bvh` (*Biovision Hierarchy*)**:
 - **Sumber Xsens (`120 Hz`, satuan cm)**: Berasal dari `third_party/GMR/assets/xsens_bvh_test/251021_04_boxing_120Hz_cm_3DsMax.bvh` (rekaman *motion capture* manusia tinggi $1.78\text{ m}$ dengan 72 kanal rotasi/posisi Euler).
 - **Generator Gerakan Kick (`scripts/generate_kick_bvh.py`)**: Mengambil postur dasar *fighting guard* dari file Xsens di atas, lalu membentuk trajektori *Martial-Arts Front Kick* (`data/bvh/human_kick_xsens.bvh`, `360` frame @ `120 Hz`) menggunakan fungsi *minimum-jerk* ($10u^3 - 15u^4 + 6u^5$) yang mengatur perpindahan berat badan ke kaki tumpu kiri, angkatan paha/lutut kanan, tendangan lurus ke depan, serta ayunan tangan penyeimbang.
-- **Sumber Eksternal (Custom BVH)**: Anda dapat menaruh file `.bvh` apa saja yang berformat **Xsens** atau **LAFAN1** ke dalam folder `data/bvh/`.
+- **Dataset Resmi LAFAN1 (`30 FPS`, satuan cm)**: **[Ubisoft La Forge Animation Dataset (`ubisoft/ubisoft-laforge-animation-dataset`)](https://github.com/ubisoft/ubisoft-laforge-animation-dataset)** — menyediakan puluhan klip `.bvh` *motion capture* manusia (*walk*, *run*, *dance*, *fight*, dll. di dalam `lafan1/lafan1.zip`). Ekstrak file `.bvh` ke `data/bvh/`, lalu langsung jalankan `scripts/retarget_bvh_gmr.py` (sudah didukung *auto-detect* + konfigurasi IK [`bvh_lafan1_to_k1.json`](./third_party/GMR/general_motion_retargeting/ik_configs/bvh_lafan1_to_k1.json); gunakan `--start` dan `--end` untuk memotong klip ke durasi 3–10 detik).
+- **Sumber Eksternal Lainnya (Custom BVH)**: Anda juga dapat menaruh file `.bvh` lain berformat **Xsens** atau **LAFAN1** ke dalam folder `data/bvh/`.
 
 ---
 
