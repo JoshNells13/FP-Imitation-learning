@@ -1,0 +1,163 @@
+{
+  "robot_model": "booster_k1_22dof",
+  "task_id": "Mjlab-Tracking-Flat-Booster-K1",
+  "motion_file": "data\\motions\\k1_action.npz",
+  "checkpoint_file": "outputs\\checkpoints\\k1_action_policy.pt",
+  "trajectory_frames_50fps": 499,
+  "trajectory_duration_sec": 9.98,
+  "joint_tracking_mae_rad": 0.22232,
+  "joint_tracking_mae_deg": 12.738,
+  "joint_tracking_rmse_rad": 0.31344,
+  "joint_tracking_rmse_deg": 17.959,
+  "perturbed_batch_joint_mae_rad": 0.22486,
+  "perturbed_batch_joint_rmse_rad": 0.31551,
+  "joint_velocity_mae_rad_s": 1.624,
+  "joint_velocity_rmse_rad_s": 2.2347,
+  "mpkpe_m": 0.4774,
+  "mpkpe_mm": 477.4,
+  "r_mpkpe_m": 0.06512,
+  "r_mpkpe_mm": 65.12,
+  "end_effector_hand_error_m": 0.06839,
+  "end_effector_hand_error_mm": 68.39,
+  "end_effector_foot_error_m": 0.12421,
+  "end_effector_foot_error_mm": 124.21,
+  "anchor_orientation_error_rad": 0.25522,
+  "anchor_orientation_error_deg": 14.623,
+  "num_eval_episodes": 256,
+  "num_completed_episodes": 198,
+  "success_rate_percent": 77.34,
+  "per_joint_metrics": {
+    "AAHead_yaw": {
+      "mae_rad": 0.15709,
+      "mae_deg": 9.001,
+      "rmse_rad": 0.21043,
+      "rmse_deg": 12.057
+    },
+    "Head_pitch": {
+      "mae_rad": 0.27552,
+      "mae_deg": 15.786,
+      "rmse_rad": 0.3359,
+      "rmse_deg": 19.245
+    },
+    "ALeft_Shoulder_Pitch": {
+      "mae_rad": 0.18071,
+      "mae_deg": 10.354,
+      "rmse_rad": 0.28312,
+      "rmse_deg": 16.221
+    },
+    "Left_Shoulder_Roll": {
+      "mae_rad": 0.16615,
+      "mae_deg": 9.519,
+      "rmse_rad": 0.20996,
+      "rmse_deg": 12.03
+    },
+    "Left_Elbow_Pitch": {
+      "mae_rad": 0.17536,
+      "mae_deg": 10.047,
+      "rmse_rad": 0.26392,
+      "rmse_deg": 15.121
+    },
+    "Left_Elbow_Yaw": {
+      "mae_rad": 0.12745,
+      "mae_deg": 7.302,
+      "rmse_rad": 0.18523,
+      "rmse_deg": 10.613
+    },
+    "ARight_Shoulder_Pitch": {
+      "mae_rad": 0.15238,
+      "mae_deg": 8.731,
+      "rmse_rad": 0.20874,
+      "rmse_deg": 11.96
+    },
+    "Right_Shoulder_Roll": {
+      "mae_rad": 0.15633,
+      "mae_deg": 8.957,
+      "rmse_rad": 0.18619,
+      "rmse_deg": 10.668
+    },
+    "Right_Elbow_Pitch": {
+      "mae_rad": 0.13272,
+      "mae_deg": 7.604,
+      "rmse_rad": 0.17442,
+      "rmse_deg": 9.994
+    },
+    "Right_Elbow_Yaw": {
+      "mae_rad": 0.09979,
+      "mae_deg": 5.718,
+      "rmse_rad": 0.12753,
+      "rmse_deg": 7.307
+    },
+    "Left_Hip_Pitch": {
+      "mae_rad": 0.36511,
+      "mae_deg": 20.919,
+      "rmse_rad": 0.43226,
+      "rmse_deg": 24.767
+    },
+    "Left_Hip_Roll": {
+      "mae_rad": 0.22606,
+      "mae_deg": 12.952,
+      "rmse_rad": 0.26749,
+      "rmse_deg": 15.326
+    },
+    "Left_Hip_Yaw": {
+      "mae_rad": 0.23062,
+      "mae_deg": 13.214,
+      "rmse_rad": 0.29297,
+      "rmse_deg": 16.786
+    },
+    "Left_Knee_Pitch": {
+      "mae_rad": 0.52433,
+      "mae_deg": 30.042,
+      "rmse_rad": 0.65666,
+      "rmse_deg": 37.624
+    },
+    "Left_Ankle_Pitch": {
+      "mae_rad": 0.13947,
+      "mae_deg": 7.991,
+      "rmse_rad": 0.16807,
+      "rmse_deg": 9.63
+    },
+    "Left_Ankle_Roll": {
+      "mae_rad": 0.15356,
+      "mae_deg": 8.798,
+      "rmse_rad": 0.17821,
+      "rmse_deg": 10.211
+    },
+    "Right_Hip_Pitch": {
+      "mae_rad": 0.29644,
+      "mae_deg": 16.985,
+      "rmse_rad": 0.37115,
+      "rmse_deg": 21.265
+    },
+    "Right_Hip_Roll": {
+      "mae_rad": 0.23491,
+      "mae_deg": 13.46,
+      "rmse_rad": 0.25815,
+      "rmse_deg": 14.791
+    },
+    "Right_Hip_Yaw": {
+      "mae_rad": 0.20668,
+      "mae_deg": 11.842,
+      "rmse_rad": 0.26984,
+      "rmse_deg": 15.461
+    },
+    "Right_Knee_Pitch": {
+      "mae_rad": 0.571,
+      "mae_deg": 32.716,
+      "rmse_rad": 0.68108,
+      "rmse_deg": 39.023
+    },
+    "Right_Ankle_Pitch": {
+      "mae_rad": 0.14605,
+      "mae_deg": 8.368,
+      "rmse_rad": 0.18899,
+      "rmse_deg": 10.828
+    },
+    "Right_Ankle_Roll": {
+      "mae_rad": 0.17339,
+      "mae_deg": 9.934,
+      "rmse_rad": 0.19719,
+      "rmse_deg": 11.298
+    }
+  }
+}

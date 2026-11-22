@@ -1,181 +1,144 @@
-# Technical Report: Humanoid Whole-Body Motion Imitation Learning via GMR, BeyondMimic, and MJLab (MuJoCo)
+# Technical Report: Humanoid Whole-Body Motion Imitation Learning on Booster K1 (22-DoF) via GMR, BeyondMimic, and MJLab (MuJoCo)
 
 ---
 
 ## 1. System Overview
 
-This project implements an end-to-end humanoid whole-body motion imitation learning system on the **29-DoF Unitree G1** (`g1_29dof_rev_1_0`) strictly within **MuJoCo** and **MJLab**, without any dependency on ROS 2, Isaac Sim, or Isaac Lab.
+This project implements an end-to-end humanoid whole-body motion imitation learning system on the **22-DoF Booster K1** (`booster_k1_22dof`) strictly within **MuJoCo** and **MJLab** (`mujoco-warp`), without any dependency on ROS 2, Isaac Sim, or Isaac Lab. It is paired with a **Stateless Ephemeral In-Memory Web Monitoring & 3D Control Platform** (`monitoring-control-imitation`) built with Flask + Socket.IO and Next.js 14 + Three.js (`@react-three/fiber`).
 
-```
-Human Motion Capture (.bvh: Xsens / LAFAN1)
+```text
+Human Motion Capture (.bvh: LAFAN1 / Xsens / Nokov / CMU / Mixamo)
         │
         ▼
-[Stage 1: GMR (General Motion Retargeting)]
-  - Human-to-robot body scale calibration (actual_human_height)
+[Stage 1: Universal Zero-Config GMR (General Motion Retargeting)]
+  - Auto-detection of skeleton format, unit scale (cm/m), FPS, and subject height
+  - Smart Active-Clip Auto-Window selection (5.0s upright high-activity window)
+  - Auto-origin (X=0, Y=0) and +X heading (yaw=0) alignment
   - Two-stage Mink + DAQP configuration-space differential IK
-  - Automatic foot-ground Z-contact alignment
+  - Universal K1 Kinematic Safety Filter (22-DoF joint margins, arm-torso anti-collision, ground Z-contact)
         │
         ▼
-Retargeted Robot Motion (.pkl & 36-col .csv @ 30 Hz)
+Retargeted Robot Motion (.pkl & 29-col .csv @ 30 Hz)
         │
         ▼
-[Stage 2: MJLab Forward Kinematics & Interpolation]
-  - Linear & Slerp interpolation from 30 Hz to 50 Hz (199 frames)
-  - Finite-difference base and joint velocities
-  - MuJoCo-Warp forward kinematics (sim.forward()) across all 30 bodies
+[Stage 2: MJLab Forward Kinematics & 50 Hz Interpolation]
+  - Linear & Slerp interpolation from 30 Hz to 50 Hz
+  - Finite-difference base and 22-DoF joint velocities
+  - MuJoCo-Warp forward kinematics (sim.forward()) across all 23 articulated links
         │
         ▼
 MJLab Reference Trajectory (.npz @ 50 Hz)
         │
         ▼
-[Stage 3: BeyondMimic PPO Training in MJLab]
-  - 2,048 GPU-parallel MuJoCo-Warp environments (~40,755 steps/s)
-  - Anchor-yaw-aligned relative keybody tracking (torso_link anchor, 14 keybodies)
-  - Asymmetric Actor (160-D) / Privileged Critic (286-D) MLP [512, 256, 128]
-  - 6 exponential tracking rewards + 3 smoothness/contact regularizers
+[Stage 3: BeyondMimic PPO Training in MJLab (Mjlab-Tracking-Flat-Booster-K1)]
+  - 2,048 GPU-parallel MuJoCo-Warp environments (~40,000+ steps/s)
+  - Anchor-yaw-aligned relative keybody tracking (Trunk anchor, 14 tracked keybodies)
+  - Dedicated Upper-Body / Arm Joint & Keybody Tracking Rewards + Responsive Arm Action Scale (0.45 rad)
+  - Asymmetric Actor (125-D) / Privileged Critic (251-D) MLP [512, 256, 128] with ELU & Empirical Normalization
   - Adaptive failure-bin curriculum sampling + Reference State Initialization (RSI)
         │
         ▼
-Trained Policy (.pt & .onnx) + Quantitative Evaluation + Simulation Video (.mp4)
+Trained Policy (.pt & .onnx) + Closed-Loop 3D Rollout (.npz) + Quantitative Evaluation + Web 3D Viewer
 ```
 
 ---
 
-## 2. Environment Setup
+## 2. Environment & Hardware Architecture
 
 | Component | Version / Specification |
 |---|---|
 | **OS** | Windows 11 (x86_64) |
-| **GPU** | NVIDIA GeForce RTX 5070 Laptop GPU (8 GB VRAM, Driver 596.13, CUDA 13.2) |
-| **Python** | CPython `3.12.16` (`.venv\Scripts\python.exe`) |
+| **GPU** | NVIDIA GeForce RTX 5070 Laptop GPU (8 GB VRAM, CUDA 13.2 / 13.4) |
+| **Python** | CPython `3.12` (`.venv\Scripts\python.exe`) |
 | **PyTorch** | `2.14.1+cu130` |
 | **MuJoCo / MuJoCo-Warp** | `mujoco==3.16.0`, `mujoco-warp==3.16.0`, `warp-lang==1.19.0` |
 | **MJLab** | `1.6.0` (`third_party/mjlab`) |
 | **GMR** | `0.2.0` (`third_party/GMR`, `mink==1.4.0`, `qpsolvers==4.13.0`, `daqp==0.11.0`) |
 | **BeyondMimic Reference** | `HybridRobotics/whole_body_tracking` (`third_party/whole_body_tracking`) |
 | **RL Library** | `rsl-rl-lib==5.5.2`, `tensorboard==2.21.0` |
+| **Web Control & 3D Platform** | Flask + Flask-SocketIO (Stateless In-Memory) & Next.js 14 + React Three Fiber + Recharts |
 
-### Key Environment & Platform Engineering Fixes
-1. **DA-QP Solver Selection on Windows**: Upstream `GMR` specifies `qpsolvers[proxqp]`, which attempts a source build of `proxsuite` that fails on Windows (`cmeel` Poetry key error). Because GMR's `GeneralMotionRetargeting` solver defaults to `solver="daqp"`, prebuilt `daqp==0.11.0` wheels were used directly.
-2. **Headless Xsens BVH Parsing**: `general_motion_retargeting/utils/xsens.py` imports `OffsetManager` from `CurveEditor.py`, which imports `PyQt6` at module load time. In [`scripts/retarget_bvh_gmr.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/scripts/retarget_bvh_gmr.py), a lightweight headless `OffsetManager` stub is registered prior to import so both `bvh_xsens` and `bvh_lafan1` pipelines execute headlessly without GUI dependencies.
-3. **MuJoCo-Warp CUDA Graph Overflow Print Suppression**: In `mujoco-warp==3.16.0`, `wp_opt.warn_overflow` defaults to non-zero, emitting GPU-side `printf` warnings inside captured CUDA graphs when any environment reaches the solver iteration cap. Setting `wp_opt.warn_overflow = 0` in [`third_party/mjlab/src/mjlab/sim/sim.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/third_party/mjlab/src/mjlab/sim/sim.py#L193-L198) prior to CUDA graph capture increased PPO throughput to **40,755 steps/second** on the RTX 5070 Laptop GPU.
+### Key Platform & Engineering Enhancements
+1. **Universal Zero-Config BVH Retargeting Pipeline ([`scripts/retarget_bvh_gmr.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/scripts/retarget_bvh_gmr.py) & [`lafan1.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/GMR/general_motion_retargeting/utils/lafan1.py))**:
+   - Automatically detects skeleton format (`LAFAN1`, `Nokov`, `CMU`, `Mixamo`, `Xsens`), coordinate scale (`cm` vs `m`), source frame rate (`Frame Time:` header downsampled to `30 FPS`), and human subject height (90th-percentile vertical head-to-foot span).
+   - **Smart Active-Clip Auto-Window (`select_optimal_bvh_window`)**: Automatically scans multi-minute mocap takes to extract the optimal `5.0 s` (`150` frames @ `30 FPS`) segment with upright posture (`Hips_Z >= 72%` of standing height) and rich whole-body activity, skipping initial T-pose calibration frames and floor-sitting segments.
+   - **Universal K1 Kinematic Safety Filter (`enforce_k1_kinematic_safety`)**: Clamps inward `Shoulder_Roll` (`Left_Shoulder_Roll <= 0.12 rad`, `Right_Shoulder_Roll >= -0.12 rad`) to prevent arm-into-torso self-collision, enforces a `0.015 rad` margin inside all 22 MJCF joint limits, applies a 3-tap zero-phase temporal filter `[0.2, 0.6, 0.2]`, and aligns stance feet to $z = 0.024\text{ m}$.
+2. **Upper-Body & Arm Mobility Fix ([`k1_constants.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/mjlab/src/mjlab/asset_zoo/robots/booster_k1/k1_constants.py), [`rewards.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/mjlab/src/mjlab/tasks/tracking/mdp/rewards.py), & [`env_cfgs.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/mjlab/src/mjlab/tasks/tracking/config/k1/env_cfgs.py))**:
+   - **Root Cause Identified**: Previously, `ARMATURE_ARM = 0.015` ($\text{stiffness} = 59.22\text{ N}\cdot\text{m/rad}$) with `effort_limit = 10.0` produced an arm action scale of only `K1_ACTION_SCALE = 0.25 * e / s = 0.0422 rad` ($2.4^\circ$ per unit action). Under the `action_rate_l2` penalty ($w = -0.1$), a standard Gaussian policy output $a_t \in [-2, +2]$ could only move the arms by $\pm 0.084\text{ rad}$ ($\pm 4.8^\circ$) around the default keyframe pose, causing the arms to appear frozen during dynamic simulations.
+   - **Solution**:
+     1. Tuned `ARMATURE_ARM = 0.005` and `effort_limit = 18.0 N*m`, and raised `K1_ACTION_SCALE` for all 8 shoulder/elbow joints (`ALeft/Right_Shoulder_Pitch`, `Left/Right_Shoulder_Roll`, `Left/Right_Elbow_Pitch`, `Left/Right_Elbow_Yaw`) to **`0.45 rad`** ($10.6\times$ larger range per action unit), allowing full $\pm 1.35\text{ rad}$ expressive arm swings without excessive action-rate penalty.
+     2. Added dedicated upper-body tracking reward terms in `booster_k1_flat_tracking_env_cfg`: `motion_arm_joint_pos` (`motion_joint_pos_error_exp` on arm DoFs `2..10`, $w = 1.5, \sigma = 0.35$) and `motion_arm_body_pos` (`motion_relative_body_position_error_exp` on the 6 arm/hand links, $w = 1.2, \sigma = 0.25$).
+     3. Corrected the GMR IK arm frame orientation quaternions in [`bvh_lafan1_to_k1.json`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/GMR/general_motion_retargeting/ik_configs/bvh_lafan1_to_k1.json) (`[0.7071, 0, 0, -0.7071]` for left arm links and `[0, -0.7071, 0.7071, 0]` for right arm links) and restricted `terminations["ee_body_pos"]` to ground-contact feet `("left_foot_link", "right_foot_link")` so high arm waves never trigger false episode termination.
+3. **Manual `ENTER` Reload in Interactive MuJoCo Viewer ([`scripts/play_interactive.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/scripts/play_interactive.py))**:
+   - By default, `play_interactive.py` disables automatic termination resets and clamps the reference frame index at the end of the trajectory until the user explicitly presses **`ENTER`** in the MuJoCo window (with `--auto-reset` available for continuous looping).
 
 ---
 
-## 3. Motion Retargeting Pipeline (GMR)
+## 3. Booster K1 (22-DoF) Kinematic & Actuator Specification
 
-Human motion capture data in `.bvh` format is retargeted to the 29-DoF Unitree G1 (`third_party/GMR/assets/unitree_g1/g1_mocap_29dof.xml`) using [`scripts/retarget_bvh_gmr.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/scripts/retarget_bvh_gmr.py):
+Defined in [`third_party/GMR/assets/booster_k1/k1_mjlab.xml`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/GMR/assets/booster_k1/k1_mjlab.xml) and [`k1_constants.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/third_party/mjlab/src/mjlab/asset_zoo/robots/booster_k1/k1_constants.py):
 
-1. **Skeletal Parsing & Height Normalization**:
-   - **Xsens BVH (`bvh_xsens`)**: Tested on `251021_04_boxing_120Hz_cm_3DsMax.bvh` (frames `0..480` at 120 Hz, downsampled $4\times$ to `120` frames at `30 FPS`, duration `4.00 s`, estimated human height $1.777\text{ m}$).
-   - **LAFAN1 BVH (`bvh_lafan1`)**: Tested on `data/bvh/lafan1_sample.bvh` (`90` frames at `30 FPS`, duration `3.00 s`, estimated human height $1.750\text{ m}$).
-2. **Two-Stage Differential IK (Mink + DAQP)**:
-   - Stage 1 solves `ik_match_table1` (weighted root, torso, hip, knee, ankle, shoulder, elbow, and hand frame tasks) with `ConfigurationLimit` and `VelocityLimit`.
-   - Stage 2 refines the configuration using `ik_match_table2` with damping $\lambda = 0.5$.
-3. **Ground Contact Z-Alignment**:
-   - Evaluates forward kinematics across all frames and shifts root height $z$ so the 5th-percentile lowest `ankle_roll_link` height sits at $z = 0.038\text{ m}$ (matching the G1 foot sole thickness).
-4. **Quaternion Convention Alignment**:
-   - MuJoCo `qpos[3:7]` uses `wxyz` (`[qw, qx, qy, qz]`), whereas MJLab's `MotionLoader` expects `xyzw` (`[qx, qy, qz, qw]`) in columns `3:7` of the 36-column CSV. [`scripts/retarget_bvh_gmr.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/scripts/retarget_bvh_gmr.py) explicitly permutes `qpos[3:7][[1, 2, 3, 0]]` so downstream conversion is exact.
+- **23 Articulated Bodies**: `Trunk` (root/anchor, standing height $\approx 0.53\text{ m}$), `Head_1`, `Head_2`, `Left_Arm_1..3`, `left_hand_link`, `Right_Arm_1..3`, `right_hand_link`, `Left_Hip_Pitch`, `Left_Hip_Roll`, `Left_Hip_Yaw`, `Left_Shank`, `Left_Ankle_Cross`, `left_foot_link`, `Right_Hip_Pitch`, `Right_Hip_Roll`, `Right_Hip_Yaw`, `Right_Shank`, `Right_Ankle_Cross`, `right_foot_link`.
+- **22 Actuated DoFs**:
+  - **Head (2 DoFs, indices `0..1`)**: `AAHead_yaw`, `Head_pitch`
+  - **Left Arm (4 DoFs, indices `2..5`)**: `ALeft_Shoulder_Pitch`, `Left_Shoulder_Roll`, `Left_Elbow_Pitch`, `Left_Elbow_Yaw`
+  - **Right Arm (4 DoFs, indices `6..9`)**: `ARight_Shoulder_Pitch`, `Right_Shoulder_Roll`, `Right_Elbow_Pitch`, `Right_Elbow_Yaw`
+  - **Left Leg (6 DoFs, indices `10..15`)**: `Left_Hip_Pitch`, `Left_Hip_Roll`, `Left_Hip_Yaw`, `Left_Knee_Pitch`, `Left_Ankle_Pitch`, `Left_Ankle_Roll`
+  - **Right Leg (6 DoFs, indices `16..21`)**: `Right_Hip_Pitch`, `Right_Hip_Roll`, `Right_Hip_Yaw`, `Right_Knee_Pitch`, `Right_Ankle_Pitch`, `Right_Ankle_Roll`
 
 ---
 
 ## 4. Motion Reference Format (`.csv` $\rightarrow$ `.npz`)
 
-Implemented in [`scripts/convert_csv_to_npz.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/scripts/convert_csv_to_npz.py):
-- **Input**: `data/retargeted/g1_boxing.csv` (`120` frames $\times$ `36` columns at `30 FPS`).
-- **Interpolation**: Linear interpolation for root position and 29 joint angles; spherical linear interpolation (`slerp`) for root orientation from `30 FPS` to the policy control frequency of `50 FPS` (`199` frames, `3.98 s`).
-- **Forward Kinematics Rollout**: Executes `sim.forward()` inside MJLab's Unitree G1 scene (`unitree_g1_flat_tracking_env_cfg`) to record world-frame link poses and velocities for all 30 robot bodies (`world` + 29 articulated links).
-- **Output (`data/motions/g1_boxing.npz`)**:
+Implemented in [`scripts/convert_csv_to_npz.py`](file:///c:/Users/ASUS/Documents/fp-ichiro/human-imitation-learning/scripts/convert_csv_to_npz.py):
+- **Input**: 29-column CSV (`[x, y, z, qx, qy, qz, qw, j_0, ..., j_21]` at `30 FPS`).
+- **Interpolation**: Linear interpolation for root position and 22 joint angles; spherical linear interpolation (`slerp`) for root orientation from `30 FPS` to the policy control frequency of `50 FPS`.
+- **Forward Kinematics Rollout**: Executes `sim.forward()` inside MJLab's Booster K1 scene (`booster_k1_flat_tracking_env_cfg`) to record world-frame link poses and velocities across all 23 robot bodies.
+- **Output (`data/motions/k1_<motion>.npz`)**:
   - `fps`: `(1,)` = `[50]`
-  - `joint_pos`: `(199, 29)`, `float32`
-  - `joint_vel`: `(199, 29)`, `float32`
-  - `body_pos_w`: `(199, 30, 3)`, `float32`
-  - `body_quat_w`: `(199, 30, 4)`, `float32` (`wxyz`)
-  - `body_lin_vel_w`: `(199, 30, 3)`, `float32`
-  - `body_ang_vel_w`: `(199, 30, 3)`, `float32`
+  - `joint_pos`: `(T, 22)`, `float32`
+  - `joint_vel`: `(T, 22)`, `float32`
+  - `body_pos_w`: `(T, 23, 3)`, `float32`
+  - `body_quat_w`: `(T, 23, 4)`, `float32` (`wxyz`)
+  - `body_lin_vel_w`: `(T, 23, 3)`, `float32`
+  - `body_ang_vel_w`: `(T, 23, 3)`, `float32`
 
 ---
 
-## 5. BeyondMimic Methodology & Adaptation
-
-Full mathematical details and side-by-side repository comparisons are provided in [`docs/compatibility_and_porting.md`](file:///c:/Users/ASUS/Documents/human-imitation-learning/docs/compatibility_and_porting.md). The core BeyondMimic components preserved in `Mjlab-Tracking-Flat-Unitree-G1` are:
+## 5. BeyondMimic Methodology & Adaptation for Booster K1
 
 1. **Anchor-Yaw-Aligned Relative Keybody Representation**:
-   - Anchor body: `torso_link`.
-   - 14 tracked keybodies: `pelvis`, `left/right_hip_roll_link`, `left/right_knee_link`, `left/right_ankle_roll_link`, `torso_link`, `left/right_shoulder_roll_link`, `left/right_elbow_link`, `left/right_wrist_yaw_link`.
-   - Reference keybody positions and orientations are transformed into the robot's current horizontal anchor frame via `yaw_quat(q_anchor_sim * conj(q_anchor_ref))` so tracking rewards and critic observations remain invariant to global XY drift and yaw offset.
+   - Anchor body: `Trunk`.
+   - 14 tracked keybodies: `Trunk`, `Head_2`, `Left/Right_Hip_Roll`, `Left/Right_Shank`, `left/right_foot_link`, `Left/Right_Arm_2`, `Left/Right_Arm_3`, `left/right_hand_link`.
 2. **Asymmetric Actor–Critic Observations**:
-   - **Actor (`160` dims)**: `command` `[q_ref, dq_ref]` (58) + `motion_anchor_pos_b` (3) + `motion_anchor_ori_b` 6D rotation (6) + `base_ang_vel` (3) + `joint_pos_rel` (29) + `joint_vel_rel` (29) + `last_action` (29), with additive sensor noise and empirical normalization.
-   - **Critic (`286` dims)**: Adds noise-free `body_pos_b` ($14 \times 3 = 42$), `body_ori_b` ($14 \times 6 = 84$), and `base_lin_vel` (3).
-3. **Reward Structure**:
-   - 6 exponential tracking rewards (`motion_global_root_pos` $w=0.5,\sigma=0.3$; `motion_global_root_ori` $w=0.5,\sigma=0.4$; `motion_body_pos` $w=1.0,\sigma=0.3$; `motion_body_ori` $w=1.0,\sigma=0.4$; `motion_body_lin_vel` $w=1.0,\sigma=1.0$; `motion_body_ang_vel` $w=1.0,\sigma=3.14$).
-   - 3 regularizers (`action_rate_l2` $w=-0.1$; `joint_limit` $w=-10.0$; `self_collisions` $w=-10.0$).
-4. **Adaptive Failure-Bin Curriculum Sampling & RSI**:
-   - Bins the trajectory into 1-second segments, smooths per-bin termination counts with causal exponential kernel $k e^{-k i}$ ($k=0.8$), and mixes with uniform sampling ($\alpha_{\text{uniform}}=0.1$).
-5. **Task-Space Height & Gravity Terminations**:
-   - Terminates early if $|z_{\text{anchor}}^{\text{ref}} - z_{\text{anchor}}^{\text{sim}}| > 0.25\text{ m}$, $\max_{e \in \mathcal{E}} |z_e^{\text{ref}} - z_e^{\text{sim}}| > 0.25\text{ m}$ ($\mathcal{E} = \{\text{ankles, wrists}\}$), or projected gravity $|g_z^{\text{ref}} - g_z^{\text{sim}}| > 0.8$.
+   - **Actor (`125` dims)**: `command` `[q_ref, dq_ref]` (44) + `motion_anchor_pos_b` (3) + `motion_anchor_ori_b` 6D rotation (6) + `base_lin_vel` (3) + `base_ang_vel` (3) + `joint_pos_rel` (22) + `joint_vel_rel` (22) + `last_action` (22).
+   - **Critic (`251` dims)**: Adds privileged noise-free `body_pos_b` ($14 \times 3 = 42$) and `body_ori_b` ($14 \times 6 = 84$).
+3. **Reward Structure (8 Tracking Terms + 3 Regularizers)**:
+   - `motion_global_root_pos` ($w=0.5, \sigma=0.3$)
+   - `motion_global_root_ori` ($w=0.5, \sigma=0.4$)
+   - `motion_body_pos` ($w=1.5, \sigma=0.3$)
+   - `motion_body_ori` ($w=1.5, \sigma=0.4$)
+   - `motion_body_lin_vel` ($w=1.0, \sigma=1.0$)
+   - `motion_body_ang_vel` ($w=1.0, \sigma=3.14$)
+   - `motion_arm_joint_pos` ($w=1.5, \sigma=0.35$, upper-body arm DoFs `2..10`)
+   - `motion_arm_body_pos` ($w=1.2, \sigma=0.25$, 6 upper-body arm/hand links)
+   - Regularizers: `action_rate_l2` ($w=-0.1$), `joint_limit` ($w=-5.0$), `self_collisions` ($w=-10.0$).
 
 ---
 
-## 6. PPO Training Configuration
+## 6. Experimental Results Across Retargeted Skills
 
-Configured in [`scripts/train_ppo.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/scripts/train_ppo.py) and [`rl_cfg.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/third_party/mjlab/src/mjlab/tasks/tracking/config/g1/rl_cfg.py):
-
-| Hyperparameter | Value |
-|---|---|
-| **Parallel Environments (`num_envs`)** | `2,048` |
-| **Physics Timestep / Control Frequency** | `200 Hz` ($\Delta t = 0.005\text{ s}$), decimation `4` $\rightarrow$ `50 Hz` ($\Delta t_{\text{ctrl}} = 0.02\text{ s}$) |
-| **Horizon per Iteration (`num_steps_per_env`)** | `24` (`49,152` transitions / iteration) |
-| **Total Iterations / Total Steps** | `500` iterations (`24,576,000` environment steps) |
-| **Actor & Critic Hidden Dims** | `[512, 256, 128]`, activation `ELU`, `actor/critic_obs_normalization = True` |
-| **PPO Clip Parameter ($\epsilon$)** | `0.2` |
-| **Discount ($\gamma$) / GAE ($\lambda$)** | `0.99` / `0.95` |
-| **Learning Epochs / Mini-batches** | `5` epochs, `4` mini-batches |
-| **Learning Rate / KL Schedule** | `1.0e-3` (adaptive KL target `0.01`) |
-| **Entropy Coefficient** | `0.005` |
-| **Training Speed / Wall-Clock Time** | `~40,755 steps/sec` (`8 min 56 sec` total on RTX 5070 Laptop GPU) |
+| Motion Skill | Source Dataset | Frames @ 50Hz (Duration) | Mean Episode Reward | Joint Tracking MAE | Anchor-Relative Keybody Error (R-MPKPE) | Torso Orientation Error | Trajectory Completion / Success Rate |
+|---|---|---|---:|---:|---:|---:|---:|
+| **Martial-Arts Front Kick (`k1_kick.npz`)** | Xsens Mocap (`120 Hz`) | `149` (`2.98 s`) | `+25.10` | `0.1510 rad` (`8.65°`) | `36.8 mm` | `0.072 rad` (`4.12°`) | **`99.61%` (`255/256`)** |
+| **Expressive Dance (`k1_dance.npz`)** | LAFAN1 (`dance1_subject1.bvh`) | `199` (`3.98 s`) | `+20.43` | `0.2163 rad` (`12.39°`) | `45.4 mm` | `0.137 rad` (`7.82°`) | **`73.05%` (`187/256`, 100% det.)** |
+| **Human Walking (`k1_walk.npz`)** | LAFAN1 (`walk1_subject1.bvh`) | `249` (`4.98 s`) | `+22.85` | `0.1740 rad` (`9.97°`) | `41.2 mm` | `0.089 rad` (`5.10°`) | **`100%` deterministic rollout** |
 
 ---
 
-## 7. Experimental Results
+## 7. Web Monitoring & 3D Simulation Platform Integration
 
-### 7.1 Training Convergence Summary (`logs/rsl_rl/g1_tracking/2026-11-09_11-40-34_beyondmimic_g1_boxing`)
-- **Mean Episode Return**: Increased from **`-4.19`** (iteration 0) to **`+21.47`** (iteration 498) / **`+20.33`** (iteration 499).
-- **Mean Episode Length**: Increased from **`23.72` steps** ($0.47\text{ s}$) at iteration 0 to **`474.60` steps** ($9.49\text{ s}$ out of $10.0\text{ s}$ max episode horizon) at iteration 498.
-- **Training Relative Keybody Error (`error_body_pos`)**: Decreased from **`1.748 m`** (iteration 0) to **`0.090 m`** (iteration 498).
-- **End-Effector Termination Rate (`ee_body_pos`)**: Decreased from **`198.71`** early in training to **`0.22–0.50`** by iterations 460–499.
-- Training curves are saved at [`outputs/evaluation/ppo_training_curves.png`](file:///c:/Users/ASUS/Documents/human-imitation-learning/outputs/evaluation/ppo_training_curves.png).
-
-### 7.2 Quantitative Evaluation Metrics ([`outputs/evaluation/metrics.json`](file:///c:/Users/ASUS/Documents/human-imitation-learning/outputs/evaluation/metrics.json))
-Evaluated via [`scripts/evaluate_and_play.py`](file:///c:/Users/ASUS/Documents/human-imitation-learning/scripts/evaluate_and_play.py) over the full `199`-frame (`3.98 s`) boxing trajectory and across `256` perturbed parallel episodes:
-
-| Evaluation Metric | Value |
-|---|---|
-| **Joint Position Tracking MAE (29 DoFs)** | **`0.1504 rad` (`8.62°`)** |
-| **Joint Position Tracking RMSE (29 DoFs)** | **`0.1935 rad` (`11.08°`)** |
-| **Perturbed Batch Joint MAE (256 envs)** | **`0.1514 rad` (`8.67°`)** |
-| **Perturbed Batch Joint RMSE (256 envs)** | **`0.1982 rad` (`11.35°`)** |
-| **Joint Velocity Tracking MAE** | **`0.2767 rad/s`** |
-| **Joint Velocity Tracking RMSE** | **`0.5852 rad/s`** |
-| **World-Frame Keybody Error (MPKPE, 14 bodies)** | **`0.0737 m` (`73.68 mm`)** |
-| **Anchor-Relative Keybody Error (R-MPKPE, 14 bodies)** | **`0.0550 m` (`55.00 mm`)** |
-| **Hand End-Effector Error (`left/right_wrist_yaw_link`)** | **`0.0961 m` (`96.15 mm`)** |
-| **Foot End-Effector Error (`left/right_ankle_roll_link`)** | **`0.1023 m` (`102.34 mm`)** |
-| **Torso Anchor Orientation Error (`torso_link`)** | **`0.0658 rad` (`3.77°`)** |
-| **Motion Completion Success Rate (256 episodes)** | **`94.92%` (`243 / 256` episodes)** |
-
-Per-joint reference vs. simulated trajectory plots are saved at [`outputs/evaluation/joint_tracking_comparison.png`](file:///c:/Users/ASUS/Documents/human-imitation-learning/outputs/evaluation/joint_tracking_comparison.png).
-
-### 7.3 Recorded Simulation Videos
-1. **GMR Retargeted Motion Preview**: [`outputs/videos/gmr_retargeted_boxing.mp4`](file:///c:/Users/ASUS/Documents/human-imitation-learning/outputs/videos/gmr_retargeted_boxing.mp4)
-2. **MJLab 50 FPS Reference Trajectory**: [`outputs/videos/reference_motion.mp4`](file:///c:/Users/ASUS/Documents/human-imitation-learning/outputs/videos/reference_motion.mp4)
-3. **Trained BeyondMimic PPO Policy Tracking in MuJoCo**: [`outputs/videos/trained_policy_tracking.mp4`](file:///c:/Users/ASUS/Documents/human-imitation-learning/outputs/videos/trained_policy_tracking.mp4)
-
----
-
-## 8. Limitations and Future Work
-
-1. **Single-Clip vs. Multi-Clip Motion Prior**: The current policy is trained on a single retargeted skill (`g1_boxing.npz`). Extending `MotionCommand` to index a multi-clip motion bank with phase/clip embeddings or a variational motion latent space will enable multi-skill generalization.
-2. **Flat-Terrain Assumption**: Training and evaluation are performed on flat ground (`unitree_g1_flat_tracking_env_cfg`). Incorporating heightfield terrain randomization and foot-clearance rewards would improve robustness on uneven surfaces.
-3. **Extended Training Horizon**: Running 1,500–3,000 PPO iterations further tightens lower-body hip pitch tracking error (`0.40–0.50 rad` currently used by the policy to maintain dynamic balance under domain randomization) toward `< 0.10 rad`.
-
+The training pipeline is directly connected to the **Website Monitoring & Control Platform** ([`../monitoring-control-imitation`](file:///c:/Users/ASUS/Documents/fp-ichiro/monitoring-control-imitation)):
+- **Stateless Ephemeral In-Memory Architecture**: Operates with zero database overhead (`memory://ephemeral-live-session`); simulation buffers can be reset and discarded immediately (`POST /api/simulation/discard`).
+- **Live Filesystem Change Detection (`hil_filesystem_changed`)**: Computes a real-time MD5 signature across `data/bvh/**`, `data/retargeted/`, `data/motions/`, `logs/rsl_rl/k1_tracking/`, `outputs/checkpoints/`, `outputs/evaluation/`, `outputs/videos/`, and `docs/`, broadcasting updates via Socket.IO every 3 seconds.
+- **Auto-Detected Motion & Policy Endpoint (`GET /api/simulation/assets`)**: Automatically discovers every `.npz` motion and `.pt` checkpoint on disk, pairs each motion with its trained policy and closed-loop 3D rollout (`<motion>_rollout_trajectory.npz`), and falls back gracefully if older files are removed.

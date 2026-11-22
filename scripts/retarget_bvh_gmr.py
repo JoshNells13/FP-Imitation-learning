@@ -403,7 +403,7 @@ def main() -> None:
     parser.add_argument(
         "--max-duration-sec",
         type=float,
-        default=5.0,
+        default=10.0,
         help="Maximum clip duration in seconds for universal auto-window selection when --start/--end are omitted (default: 5.0s).",
     )
     parser.add_argument(

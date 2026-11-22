@@ -11,12 +11,19 @@ Tiga modul utama yang digabungkan di dalam proyek ini:
 
 ## Demo Simulasi Hasil Training — Booster K1 (22-DoF) Whole-Body Motion Tracking
 
-Berikut adalah hasil simulasi *closed-loop* pada **MuJoCo Native Interactive Viewer (`play_interactive.py`)** di mana robot fisik **Booster K1 (22-DoF)** (putih) melacak gerakan referensi manusia hasil retargeting GMR (*bayangan hijau / ghost reference*) secara *real-time* (`50 Hz` kontrol PPO / `200 Hz` fisika MuJoCo):
+Berikut adalah hasil simulasi *closed-loop* pada **MuJoCo Native Interactive Viewer (`play_interactive.py`)** dan **Evaluation Rollout (`evaluate_and_play.py`)** di mana robot fisik **Booster K1 (22-DoF)** (putih) melacak gerakan referensi manusia hasil retargeting GMR (*bayangan hijau / ghost reference*) secara *real-time* (`50 Hz` kontrol PPO / `200 Hz` fisika MuJoCo):
 
+### 1. Walking Motion Tracking (`k1_walk`)
 <div align="center">
   <img src="./docs/walk.gif" alt="Booster K1 Walking Imitation Learning Demo" width="100%" />
-  <p><em> Video Demo: <a href="./docs/walk.mp4"><code>docs/walk.mp4</code></a> — Booster K1 (22-DoF) Walking Motion Imitation Learning di MuJoCo + MJLab</em></p>
   <img src="./docs/walk.png" alt="Booster K1 Walking Imitation Learning Demo" width="100%" />
+
+</div>
+
+### 2. Whole-Body Dynamic Action Tracking (`k1_action_policy_tracking`)
+<div align="center">
+  <img src="./docs/action.gif" alt="Booster K1 Whole-Body Action Policy Tracking Demo" width="100%" />
+  <img src="./docs/action.png" alt="Booster K1 Whole-Body Action Policy Tracking Preview" width="100%" />
 </div>
 
 ---
